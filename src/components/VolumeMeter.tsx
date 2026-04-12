@@ -445,11 +445,14 @@ export default function VolumeMeter() {
 
   const startAudio = useCallback(async (): Promise<boolean> => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      // AudioContext must be created synchronously within the user gesture handler
+      // on iOS Safari — creating it after an await loses the gesture context and
+      // leaves the context permanently suspended.
       const ctx = new AudioContext()
-      // iOS requires an explicit resume() — the context starts suspended
-      // even after a user gesture on Safari/WebKit
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       await ctx.resume()
+
       const source = ctx.createMediaStreamSource(stream)
       const analyser = ctx.createAnalyser()
       analyser.fftSize = 2048
