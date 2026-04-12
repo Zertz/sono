@@ -391,7 +391,8 @@ export default function VolumeMeter() {
   }
 
   const [phase, setPhase] = useState<Phase>('idle')
-  const [volume, setVolume] = useState(0) // 0-100 dB scale
+  const [volume, setVolume] = useState(0) // 0-100 dB scale — used for bar + warning
+  const [displayVolume, setDisplayVolume] = useState(0) // EMA-smoothed, throttled — used for the label
   const [baseline, setBaseline] = useState(30)
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD)
   const [isWarning, setIsWarning] = useState(false)
@@ -410,6 +411,9 @@ export default function VolumeMeter() {
   const rafRef = useRef<number | null>(null)
   const alertCooldownRef = useRef(false)
   const calibSamplesRef = useRef<number[]>([])
+  // EMA state for the display label (separate from the bar/warning raw value)
+  const emaVolumeRef = useRef(0)
+  const displayLastUpdateRef = useRef(0)
   const calibTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Absolute dB threshold = baseline + threshold offset
@@ -463,7 +467,18 @@ export default function VolumeMeter() {
     for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i]
     const rms = Math.sqrt(sum / buf.length)
     const db = rmsToDb(rms)
+
+    // Raw value drives the bar fill and warning logic
     setVolume(db)
+
+    // EMA-smoothed value drives the display label (α=0.08 — rises fast, falls slowly)
+    const EMA_ALPHA = 0.08
+    emaVolumeRef.current = EMA_ALPHA * db + (1 - EMA_ALPHA) * emaVolumeRef.current
+    const now = performance.now()
+    if (now - displayLastUpdateRef.current >= 200) {
+      displayLastUpdateRef.current = now
+      setDisplayVolume(emaVolumeRef.current)
+    }
 
     rafRef.current = requestAnimationFrame(tick)
   }, [])
@@ -542,6 +557,8 @@ export default function VolumeMeter() {
     stopAudio()
     setPhase('idle')
     setVolume(0)
+    setDisplayVolume(0)
+    emaVolumeRef.current = 0
     setIsWarning(false)
   }, [stopAudio])
 
@@ -635,7 +652,7 @@ export default function VolumeMeter() {
               <p className="island-kicker mb-1">{t.volumeLevel}</p>
               <p className="m-0 text-3xl font-bold tabular-nums text-[var(--sea-ink)]">
                 {phase === 'active' || phase === 'calibrating'
-                  ? `${Math.round(volume)}`
+                  ? `${Math.round(displayVolume)}`
                   : '--'}
                 <span className="ml-1 text-base font-normal text-[var(--sea-ink-soft)]">
                   {t.dbUnit}
