@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n/context'
 import { type Locale } from '../i18n/translations.tsx'
-import { useSettings } from '../routes/__root'
+import { useHelp, useSettings } from '../routes/__root'
 
 type ThemeMode = 'light' | 'dark' | 'auto'
 
@@ -261,12 +261,113 @@ function SettingsOverlay({
 }
 
 // ---------------------------------------------------------------------------
+// Help overlay
+// ---------------------------------------------------------------------------
+
+interface HelpOverlayProps {
+  open: boolean
+  onClose: () => void
+}
+
+function HelpOverlay({ open, onClose }: HelpOverlayProps) {
+  const { t } = useI18n()
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const helpButtonSelector = '[aria-label="' + t.help + '"]'
+
+  useEffect(() => {
+    if (!open) return
+    function handleMouseDown(e: MouseEvent) {
+      const target = e.target as Node
+      const helpBtn = document.querySelector(helpButtonSelector)
+      if (helpBtn && helpBtn.contains(target)) return
+      if (overlayRef.current && !overlayRef.current.contains(target)) {
+        onClose()
+      }
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [open, onClose, helpButtonSelector])
+
+  return (
+    <div
+      className={`settings-overlay pointer-events-none fixed inset-x-0 top-[57px] z-50 origin-top sm:top-[65px] ${open ? 'settings-overlay-open' : ''}`}
+    >
+      <div ref={overlayRef} className="settings-overlay-backdrop border-b border-[var(--line)] px-4 py-5">
+        <div className="mx-auto w-full max-w-2xl">
+          {/* Header row */}
+          <div className="mb-4 flex items-center justify-between">
+            <p className="island-kicker m-0">{t.help}</p>
+            <button
+              onClick={onClose}
+              aria-label="Close help"
+              className="rounded-lg p-1 text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
+            >
+              <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* iOS section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              {/* Apple/phone icon */}
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 text-[var(--sea-ink)]">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                <line x1="12" y1="18" x2="12.01" y2="18" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+              <h2 className="m-0 text-sm font-semibold text-[var(--sea-ink)]">
+                {t.helpIosTitle}
+              </h2>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Safari */}
+              <div className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] p-4">
+                <p className="mb-3 m-0 text-xs font-semibold uppercase tracking-wider text-[var(--sea-ink-soft)]">
+                  {t.helpIosSafariTitle}
+                </p>
+                <ol className="m-0 space-y-2 pl-4">
+                  {t.helpIosSafariSteps.map((step, i) => (
+                    <li key={i} className="text-sm text-[var(--sea-ink)]">
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              {/* Chrome / Firefox */}
+              <div className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] p-4">
+                <p className="mb-3 m-0 text-xs font-semibold uppercase tracking-wider text-[var(--sea-ink-soft)]">
+                  {t.helpIosChromeTitle}
+                </p>
+                <ol className="m-0 space-y-2 pl-4">
+                  {t.helpIosChromeSteps.map((step, i) => (
+                    <li key={i} className="text-sm text-[var(--sea-ink)]">
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
 export default function VolumeMeter() {
   const { t } = useI18n()
   const { settingsOpen, closeSettings } = useSettings()
+  const { helpOpen, closeHelp } = useHelp()
 
   const [themeMode, setThemeMode] = useState<ThemeMode>('auto')
 
@@ -493,6 +594,9 @@ export default function VolumeMeter() {
 
   return (
     <>
+      {/* Help overlay */}
+      <HelpOverlay open={helpOpen} onClose={closeHelp} />
+
       {/* Settings overlay — rendered outside the meter card so it floats freely */}
       <SettingsOverlay
         open={settingsOpen}

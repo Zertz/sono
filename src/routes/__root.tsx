@@ -29,6 +29,25 @@ export function useSettings() {
 }
 
 // ---------------------------------------------------------------------------
+// Help overlay context — shared between Header (trigger) and VolumeMeter (panel)
+// ---------------------------------------------------------------------------
+interface HelpContextValue {
+  helpOpen: boolean
+  toggleHelp: () => void
+  closeHelp: () => void
+}
+
+export const HelpContext = createContext<HelpContextValue>({
+  helpOpen: false,
+  toggleHelp: () => {},
+  closeHelp: () => {},
+})
+
+export function useHelp() {
+  return useContext(HelpContext)
+}
+
+// ---------------------------------------------------------------------------
 
 export const Route = createRootRoute({
   head: () => ({
@@ -56,8 +75,23 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const toggleSettings = useCallback(() => setSettingsOpen((o) => !o), [])
+  const [helpOpen, setHelpOpen] = useState(false)
+
+  const toggleSettings = useCallback(() => {
+    setSettingsOpen((o) => {
+      if (!o) setHelpOpen(false)
+      return !o
+    })
+  }, [])
   const closeSettings = useCallback(() => setSettingsOpen(false), [])
+
+  const toggleHelp = useCallback(() => {
+    setHelpOpen((o) => {
+      if (!o) setSettingsOpen(false)
+      return !o
+    })
+  }, [])
+  const closeHelp = useCallback(() => setHelpOpen(false), [])
 
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
@@ -68,8 +102,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="flex h-full flex-col font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
         <I18nProvider>
           <SettingsContext value={{ settingsOpen, toggleSettings, closeSettings }}>
-            <Header />
-            {children}
+            <HelpContext value={{ helpOpen, toggleHelp, closeHelp }}>
+              <Header />
+              {children}
+            </HelpContext>
           </SettingsContext>
         </I18nProvider>
         <TanStackDevtools
