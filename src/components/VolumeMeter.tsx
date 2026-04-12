@@ -414,12 +414,18 @@ export default function VolumeMeter() {
   // EMA state for the display label (separate from the bar/warning raw value)
   const emaVolumeRef = useRef(0)
   const displayLastUpdateRef = useRef(0)
+  // Direct DOM ref for the bar mask — bypasses React render cycle for smooth 60fps updates
+  const barMaskRef = useRef<HTMLDivElement>(null)
   const calibTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Absolute dB threshold = baseline + threshold offset
   const absoluteThreshold = baseline + threshold
 
-  // Bar fills to 100% exactly when volume hits the threshold
+  // Keep a ref so the tick closure always reads the latest threshold without needing deps
+  const absoluteThresholdRef = useRef(absoluteThreshold)
+  useEffect(() => { absoluteThresholdRef.current = absoluteThreshold }, [absoluteThreshold])
+
+  // Bar fills to 100% exactly when volume hits the threshold (used only for initial/idle render)
   const barPercent = absoluteThreshold > 0
     ? Math.min(100, (volume / absoluteThreshold) * 100)
     : 0
@@ -480,7 +486,14 @@ export default function VolumeMeter() {
     const rms = Math.sqrt(sum / buf.length)
     const db = rmsToDb(rms)
 
-    // Raw value drives the bar fill and warning logic
+    // Update the bar mask directly in the DOM — no React re-render needed,
+    // avoids dropped frames from React batching on iOS Safari
+    if (barMaskRef.current && absoluteThresholdRef.current > 0) {
+      const pct = Math.min(100, (db / absoluteThresholdRef.current) * 100)
+      barMaskRef.current.style.width = `${100 - pct}%`
+    }
+
+    // Raw value still drives the warning logic via React state
     setVolume(db)
 
     // EMA-smoothed value drives the display label (α=0.08 — rises fast, falls slowly)
@@ -571,6 +584,7 @@ export default function VolumeMeter() {
     setVolume(0)
     setDisplayVolume(0)
     emaVolumeRef.current = 0
+    if (barMaskRef.current) barMaskRef.current.style.width = '100%'
     setIsWarning(false)
   }, [stopAudio])
 
@@ -717,8 +731,9 @@ export default function VolumeMeter() {
                 }}
               />
 
-              {/* Dark mask slides in from the right */}
+              {/* Dark mask slides in from the right — width driven directly via ref during playback */}
               <div
+                ref={barMaskRef}
                 className="absolute right-0 top-0 h-full bg-black/60 transition-all"
                 style={{
                   width: `${100 - barPercent}%`,
