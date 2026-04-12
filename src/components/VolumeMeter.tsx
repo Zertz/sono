@@ -425,6 +425,7 @@ export default function VolumeMeter() {
   const [isWarning, setIsWarning] = useState(false)
   const [calibrationProgress, setCalibrationProgress] = useState(0)
   const [permissionDenied, setPermissionDenied] = useState(false)
+  const [micPermissionGranted, setMicPermissionGranted] = useState(false)
   const [duration, setDuration] = useState<number | null>(null) // null = no limit, else minutes
   const [timeLeft, setTimeLeft] = useState<number | null>(null) // seconds remaining
   const [sessionEnded, setSessionEnded] = useState(false)
@@ -433,6 +434,31 @@ export default function VolumeMeter() {
   useEffect(() => {
     setBaseline(readStorage(STORAGE_KEY_BASELINE, 30))
     setThreshold(readStorage(STORAGE_KEY_THRESHOLD, DEFAULT_THRESHOLD))
+  }, [])
+
+  // Check whether microphone permission has already been granted
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.permissions) return
+    let permStatus: PermissionStatus | null = null
+    let mounted = true
+    const handleChange = () => {
+      if (permStatus && mounted) setMicPermissionGranted(permStatus.state === 'granted')
+    }
+    navigator.permissions
+      .query({ name: 'microphone' as PermissionName })
+      .then((status) => {
+        if (!mounted) return
+        permStatus = status
+        setMicPermissionGranted(status.state === 'granted')
+        status.addEventListener('change', handleChange)
+      })
+      .catch(() => {
+        // Permissions API not supported or query failed — leave state as false
+      })
+    return () => {
+      mounted = false
+      permStatus?.removeEventListener('change', handleChange)
+    }
   }, [])
 
   const streamRef = useRef<MediaStream | null>(null)
@@ -946,7 +972,7 @@ export default function VolumeMeter() {
         </div>
 
         {/* Idle tip — below the card, centered */}
-        {phase === 'idle' && !permissionDenied && !sessionEnded && (
+        {phase === 'idle' && !permissionDenied && !sessionEnded && !micPermissionGranted && (
           <p className="text-center text-sm text-[var(--sea-ink-soft)]">
             {t.idlePrompt(<strong>{t.start}</strong>)}
           </p>
