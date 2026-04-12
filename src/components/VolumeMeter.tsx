@@ -40,6 +40,15 @@ const STORAGE_KEY_THRESHOLD = 'sono_threshold'
 const DEFAULT_THRESHOLD = 20 // dB above baseline before warning
 const CALIBRATION_DURATION = 3000 // ms
 
+// Duration presets: null = no limit, number = minutes
+const DURATION_PRESETS: (number | null)[] = [null, 5, 10, 15, 30]
+
+function formatMmSs(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
 function readStorage(key: string, fallback: number): number {
   if (typeof window === 'undefined') return fallback
   const val = window.localStorage.getItem(key)
@@ -337,6 +346,9 @@ export default function VolumeMeter() {
   const [isWarning, setIsWarning] = useState(false)
   const [calibrationProgress, setCalibrationProgress] = useState(0)
   const [permissionDenied, setPermissionDenied] = useState(false)
+  const [duration, setDuration] = useState<number | null>(null) // null = no limit, else minutes
+  const [timeLeft, setTimeLeft] = useState<number | null>(null) // seconds remaining
+  const [sessionEnded, setSessionEnded] = useState(false)
 
   // Read persisted values on the client after hydration
   useEffect(() => {
@@ -514,17 +526,20 @@ export default function VolumeMeter() {
   const handleStart = useCallback(async () => {
     if (phase !== 'idle') return
     setPermissionDenied(false)
+    setSessionEnded(false)
     const ok = await startAudio()
     if (!ok) return
     setPhase('active')
+    setTimeLeft(duration !== null ? duration * 60 : null)
     rafRef.current = requestAnimationFrame(tick)
-  }, [phase, startAudio, tick])
+  }, [phase, startAudio, tick, duration])
 
   const handleStop = useCallback(() => {
     stopAudio()
     setPhase('idle')
     setVolume(0)
     setDisplayVolume(0)
+    setTimeLeft(null)
     emaVolumeRef.current = 0
     if (barMaskRef.current) barMaskRef.current.style.width = '100%'
     setIsWarning(false)
@@ -547,6 +562,19 @@ export default function VolumeMeter() {
       stopAudio()
     }
   }, [stopAudio])
+
+  // Countdown timer — ticks every second while active with a duration set
+  useEffect(() => {
+    if (phase !== 'active' || timeLeft === null) return
+    if (timeLeft <= 0) {
+      handleStop()
+      setSessionEnded(true)
+      const t = setTimeout(() => setSessionEnded(false), 4000)
+      return () => clearTimeout(t)
+    }
+    const interval = setInterval(() => setTimeLeft((s) => (s !== null ? s - 1 : null)), 1000)
+    return () => clearInterval(interval)
+  }, [phase, timeLeft, handleStop])
 
   // Resume AudioContext when the user returns to the page (iOS backgrounding)
   useEffect(() => {
@@ -688,8 +716,22 @@ export default function VolumeMeter() {
             <p className="mt-4 text-sm text-red-500">{t.micDenied}</p>
           )}
 
+          {/* Countdown while active with a duration */}
+          {phase === 'active' && timeLeft !== null && (
+            <p className="mt-4 text-sm tabular-nums text-[var(--sea-ink-soft)]">
+              {t.timeRemaining(formatMmSs(timeLeft))}
+            </p>
+          )}
+
+          {/* Session ended message */}
+          {sessionEnded && (
+            <p className="mt-4 text-sm font-semibold text-[var(--lagoon-deep)]">
+              {t.sessionEnded}
+            </p>
+          )}
+
           {/* Idle prompt */}
-          {phase === 'idle' && !permissionDenied && (
+          {phase === 'idle' && !permissionDenied && !sessionEnded && (
             <p className="mt-4 text-sm text-[var(--sea-ink-soft)]">
               {t.idlePrompt(<strong>{t.start}</strong>)}
             </p>
@@ -732,6 +774,33 @@ export default function VolumeMeter() {
             >
               <div style={{ overflow: 'hidden' }}>
                 <div className="space-y-4 pb-1 pt-4">
+                  {/* Duration picker */}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="shrink-0 text-sm font-semibold text-[var(--sea-ink)]">
+                      {t.duration}
+                    </span>
+                    <div className="flex items-center rounded-full border border-[var(--line)] bg-[var(--chip-bg)] p-0.5">
+                      {DURATION_PRESETS.map((preset) => {
+                        const label = preset === null ? t.durationNone : t.durationMinutes(preset)
+                        const active = duration === preset
+                        return (
+                          <button
+                            key={String(preset)}
+                            onClick={() => setDuration(preset)}
+                            aria-pressed={active}
+                            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                              active
+                                ? 'bg-[var(--lagoon-deep)] text-white shadow-sm'
+                                : 'text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
                   {/* Threshold slider */}
                   <div>
                     <div className="mb-2 flex items-center justify-between">

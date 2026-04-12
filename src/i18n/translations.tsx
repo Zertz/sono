@@ -23,6 +23,11 @@ export interface Translations {
   calibratingMessage: string
   micDenied: string
   idlePrompt: (startLabel: React.ReactNode) => React.ReactNode
+  duration: string
+  durationNone: string
+  durationMinutes: (n: number) => string
+  timeRemaining: (mmss: string) => string
+  sessionEnded: string
   // Volume meter — settings card
   settings: string
   adjust: string
@@ -72,6 +77,11 @@ export const translations: Record<Locale, Translations> = {
     idlePrompt: (startLabel) => (
       <>Press {startLabel} to begin monitoring. You'll be asked for microphone access.</>
     ),
+    duration: 'Duration',
+    durationNone: 'No limit',
+    durationMinutes: (n) => `${n} min`,
+    timeRemaining: (mmss) => mmss,
+    sessionEnded: "Time's up!",
     settings: 'Settings',
     adjust: 'Adjust',
     alertThreshold: 'Alert threshold',
@@ -120,6 +130,11 @@ export const translations: Record<Locale, Translations> = {
     idlePrompt: (startLabel) => (
       <>Appuyez sur {startLabel} pour commencer. L'accès au microphone sera demandé.</>
     ),
+    duration: 'Durée',
+    durationNone: 'Sans limite',
+    durationMinutes: (n) => `${n} min`,
+    timeRemaining: (mmss) => mmss,
+    sessionEnded: 'Temps \u00e9coul\u00e9\u00a0!',
     settings: 'Paramètres',
     adjust: 'Ajuster',
     alertThreshold: "Seuil d'alerte",
@@ -168,6 +183,11 @@ export const translations: Record<Locale, Translations> = {
     idlePrompt: (startLabel) => (
       <>Pulsa {startLabel} para comenzar. Se solicitará acceso al micrófono.</>
     ),
+    duration: 'Duración',
+    durationNone: 'Sin límite',
+    durationMinutes: (n) => `${n} min`,
+    timeRemaining: (mmss) => mmss,
+    sessionEnded: '¡Tiempo!',
     settings: 'Ajustes',
     adjust: 'Ajustar',
     alertThreshold: 'Umbral de alerta',
