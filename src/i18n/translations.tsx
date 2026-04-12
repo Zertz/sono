@@ -27,6 +27,7 @@ export interface Translations {
   durationNone: string
   durationMinutes: (n: number) => string
   timeRemaining: (mmss: string) => string
+  stopTimer: string
   sessionEnded: string
   // Volume meter — settings card
   settings: string
@@ -81,6 +82,7 @@ export const translations: Record<Locale, Translations> = {
     durationNone: 'No limit',
     durationMinutes: (n) => `${n} min`,
     timeRemaining: (mmss) => mmss,
+    stopTimer: 'Stop timer',
     sessionEnded: "Time's up!",
     settings: 'Settings',
     adjust: 'Adjust',
@@ -134,6 +136,7 @@ export const translations: Record<Locale, Translations> = {
     durationNone: 'Sans limite',
     durationMinutes: (n) => `${n} min`,
     timeRemaining: (mmss) => mmss,
+    stopTimer: 'Arrêter le minuteur',
     sessionEnded: 'Temps \u00e9coul\u00e9\u00a0!',
     settings: 'Paramètres',
     adjust: 'Ajuster',
@@ -187,6 +190,7 @@ export const translations: Record<Locale, Translations> = {
     durationNone: 'Sin límite',
     durationMinutes: (n) => `${n} min`,
     timeRemaining: (mmss) => mmss,
+    stopTimer: 'Detener temporizador',
     sessionEnded: '¡Tiempo!',
     settings: 'Ajustes',
     adjust: 'Ajustar',

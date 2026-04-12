@@ -311,6 +311,116 @@ function HelpOverlay({ open, onClose }: HelpOverlayProps) {
 // Main component
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Timer ring — SVG rounded-rect stroke around the meter card
+// ---------------------------------------------------------------------------
+
+// Approximate perimeter of a rounded rect: 2*(w-2r) + 2*(h-2r) + 2π*r
+function roundedRectPerimeter(w: number, h: number, r: number): number {
+  return 2 * (w - 2 * r) + 2 * (h - 2 * r) + 2 * Math.PI * r
+}
+
+function ringColor(ratio: number): string {
+  if (ratio > 0.25) return 'var(--lagoon)'
+  if (ratio > 0.10) return '#f59e0b'
+  return '#ef4444'
+}
+
+interface TimerRingProps {
+  timeLeft: number | null
+  totalSeconds: number | null
+  containerRef: React.RefObject<HTMLDivElement | null>
+}
+
+function TimerRing({ timeLeft, totalSeconds, containerRef }: TimerRingProps) {
+  const [dims, setDims] = useState({ w: 0, h: 0 })
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    // Use borderBoxSize so padding is included in the measurement
+    const ro = new ResizeObserver(([entry]) => {
+      const box = entry.borderBoxSize?.[0]
+      if (box) {
+        setDims({ w: box.inlineSize, h: box.blockSize })
+      } else {
+        setDims({ w: el.offsetWidth, h: el.offsetHeight })
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [containerRef])
+
+  const active = timeLeft !== null && totalSeconds !== null && totalSeconds > 0
+  const ratio = active ? timeLeft! / totalSeconds! : 1
+
+  // SVG fills the wrapper exactly. The rect is inset by half the stroke width
+  // so the stroke renders fully inside the SVG bounds.
+  // The card's rounded-2xl = 16px; wrapper p-[6px] adds 6px → ring rx = 22px.
+  const sw = 4
+  const half = sw / 2
+  const rx = 22
+  const svgW = dims.w
+  const svgH = dims.h
+  const rectW = svgW - sw
+  const rectH = svgH - sw
+  const perimeter = dims.w > 0 ? roundedRectPerimeter(rectW, rectH, rx) : 0
+  const offset = perimeter * (1 - ratio)
+  // cx/cy for the rotation pivot — centre of the SVG
+  const cx = svgW / 2
+  const cy = svgH / 2
+
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      {dims.w > 0 && (
+        <svg
+          width={svgW}
+          height={svgH}
+          viewBox={`0 0 ${svgW} ${svgH}`}
+          aria-hidden="true"
+          style={{ position: 'absolute', inset: 0 }}
+        >
+          {/* Both rects share the same group so they're co-registered. */}
+          <g>
+            {/* Faint track — always shown when a duration is active */}
+            {active && (
+              <rect
+                x={half} y={half}
+                width={rectW} height={rectH}
+                rx={rx} ry={rx}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={sw}
+                strokeOpacity={0.12}
+              />
+            )}
+            {/* Progress stroke — drains clockwise from top-centre */}
+            <rect
+              x={half} y={half}
+              width={rectW} height={rectH}
+              rx={rx} ry={rx}
+              fill="none"
+              stroke={ringColor(ratio)}
+              strokeWidth={sw}
+              strokeLinecap="round"
+              strokeDasharray={perimeter}
+              strokeDashoffset={offset}
+              style={{
+                opacity: active ? 1 : 0,
+                transition: 'stroke-dashoffset 1s linear, stroke 1s ease, opacity 400ms ease',
+              }}
+            />
+          </g>
+        </svg>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+
 export default function VolumeMeter() {
   const { t } = useI18n()
   const { settingsOpen, closeSettings } = useSettings()
@@ -368,6 +478,8 @@ export default function VolumeMeter() {
   // Direct DOM ref for the bar mask — bypasses React render cycle for smooth 60fps updates
   const barMaskRef = useRef<HTMLDivElement>(null)
   const calibTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Ref for the timer ring wrapper — measured by TimerRing's ResizeObserver
+  const ringWrapperRef = useRef<HTMLDivElement>(null)
 
   // Absolute dB threshold = baseline + threshold offset
   const absoluteThreshold = baseline + threshold
@@ -523,16 +635,39 @@ export default function VolumeMeter() {
     }, CALIBRATION_DURATION)
   }, [phase, stopAudio, startAudio, calibTick, tick])
 
-  const handleStart = useCallback(async () => {
+  const handleStart = useCallback(async (durationOverride?: number | null) => {
     if (phase !== 'idle') return
     setPermissionDenied(false)
     setSessionEnded(false)
     const ok = await startAudio()
     if (!ok) return
+    const activeDuration = durationOverride !== undefined ? durationOverride : duration
     setPhase('active')
-    setTimeLeft(duration !== null ? duration * 60 : null)
+    setTimeLeft(activeDuration !== null ? activeDuration * 60 : null)
     rafRef.current = requestAnimationFrame(tick)
   }, [phase, startAudio, tick, duration])
+
+  const handleDurationSelect = useCallback(async (preset: number | null) => {
+    setDuration(preset)
+    if (preset === null) {
+      // "No limit" — clear any running countdown but keep the meter going
+      setTimeLeft(null)
+      return
+    }
+    if (phase === 'active') {
+      // Meter already running — just start the countdown
+      setTimeLeft(preset * 60)
+    } else if (phase === 'idle') {
+      // Meter not running — start everything
+      setPermissionDenied(false)
+      setSessionEnded(false)
+      const ok = await startAudio()
+      if (!ok) return
+      setPhase('active')
+      setTimeLeft(preset * 60)
+      rafRef.current = requestAnimationFrame(tick)
+    }
+  }, [phase, startAudio, tick])
 
   const handleStop = useCallback(() => {
     stopAudio()
@@ -632,9 +767,12 @@ export default function VolumeMeter() {
         onThemeMode={handleThemeMode}
       />
 
-      <div className="flex w-full max-w-2xl flex-col gap-6">
-        {/* Meter card */}
-        <div className="island-shell rounded-2xl p-6 sm:p-8">
+      <div className="flex w-full max-w-2xl flex-col gap-2">
+        {/* Meter card — p-[6px] gap always reserved for the timer ring (no layout shift) */}
+        <div ref={ringWrapperRef} className="relative p-[6px]">
+          {/* Timer ring — SVG drawn around the card, inset to the wrapper boundary */}
+          <TimerRing timeLeft={timeLeft} totalSeconds={duration !== null ? duration * 60 : null} containerRef={ringWrapperRef} />
+          <div className="island-shell rounded-2xl p-6 sm:p-8">
           <div className="mb-6 flex items-center justify-between">
             <div>
               <p className="island-kicker mb-1">{t.volumeLevel}</p>
@@ -651,7 +789,7 @@ export default function VolumeMeter() {
             <div className="flex items-center gap-2">
               {phase !== 'active' && phase !== 'calibrating' && (
                 <button
-                  onClick={handleStart}
+                  onClick={() => handleStart()}
                   className="rounded-full bg-[var(--lagoon-deep)] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
                 >
                   {t.start}
@@ -694,6 +832,51 @@ export default function VolumeMeter() {
             </div>
           </div>
 
+          {/* Timer controls — always reserves space; invisible when meter is not running */}
+          <div className="mt-4 flex items-center justify-between gap-3 min-h-[2rem]" style={{ visibility: phase === 'active' ? 'visible' : 'hidden' }}>
+            {timeLeft !== null ? (
+              /* Running timer: countdown + stop button */
+              <>
+                <span className="text-sm tabular-nums text-[var(--sea-ink-soft)]">
+                  {formatMmSs(timeLeft)}
+                </span>
+                <button
+                  onClick={() => { setTimeLeft(null); setDuration(null) }}
+                  className="rounded-full border border-[var(--line)] px-3 py-1 text-xs font-medium text-[var(--sea-ink-soft)] transition hover:border-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]"
+                >
+                  {t.stopTimer}
+                </button>
+              </>
+            ) : (
+              /* No active countdown: duration label + preset picker */
+              <>
+                <span className="shrink-0 text-sm font-semibold text-[var(--sea-ink)]">
+                  {t.duration}
+                </span>
+                <div className="flex items-center rounded-full border border-[var(--line)] bg-[var(--chip-bg)] p-0.5">
+                  {DURATION_PRESETS.map((preset) => {
+                    const label = preset === null ? t.durationNone : t.durationMinutes(preset)
+                    const isActive = duration === preset
+                    return (
+                      <button
+                        key={String(preset)}
+                        onClick={() => handleDurationSelect(preset)}
+                        aria-pressed={isActive}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                          isActive
+                            ? 'bg-[var(--lagoon-deep)] text-white shadow-sm'
+                            : 'text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Calibration progress */}
           {phase === 'calibrating' && (
             <div className="mt-4">
@@ -716,24 +899,10 @@ export default function VolumeMeter() {
             <p className="mt-4 text-sm text-red-500">{t.micDenied}</p>
           )}
 
-          {/* Countdown while active with a duration */}
-          {phase === 'active' && timeLeft !== null && (
-            <p className="mt-4 text-sm tabular-nums text-[var(--sea-ink-soft)]">
-              {t.timeRemaining(formatMmSs(timeLeft))}
-            </p>
-          )}
-
           {/* Session ended message */}
           {sessionEnded && (
             <p className="mt-4 text-sm font-semibold text-[var(--lagoon-deep)]">
               {t.sessionEnded}
-            </p>
-          )}
-
-          {/* Idle prompt */}
-          {phase === 'idle' && !permissionDenied && !sessionEnded && (
-            <p className="mt-4 text-sm text-[var(--sea-ink-soft)]">
-              {t.idlePrompt(<strong>{t.start}</strong>)}
             </p>
           )}
 
@@ -774,33 +943,6 @@ export default function VolumeMeter() {
             >
               <div style={{ overflow: 'hidden' }}>
                 <div className="space-y-4 pb-1 pt-4">
-                  {/* Duration picker */}
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="shrink-0 text-sm font-semibold text-[var(--sea-ink)]">
-                      {t.duration}
-                    </span>
-                    <div className="flex items-center rounded-full border border-[var(--line)] bg-[var(--chip-bg)] p-0.5">
-                      {DURATION_PRESETS.map((preset) => {
-                        const label = preset === null ? t.durationNone : t.durationMinutes(preset)
-                        const active = duration === preset
-                        return (
-                          <button
-                            key={String(preset)}
-                            onClick={() => setDuration(preset)}
-                            aria-pressed={active}
-                            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                              active
-                                ? 'bg-[var(--lagoon-deep)] text-white shadow-sm'
-                                : 'text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]'
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-
                   {/* Threshold slider */}
                   <div>
                     <div className="mb-2 flex items-center justify-between">
@@ -850,6 +992,15 @@ export default function VolumeMeter() {
             </div>
           </div>
         </div>
+        {/* end timer ring wrapper */}
+        </div>
+
+        {/* Idle tip — below the card, centered */}
+        {phase === 'idle' && !permissionDenied && !sessionEnded && (
+          <p className="text-center text-sm text-[var(--sea-ink-soft)]">
+            {t.idlePrompt(<strong>{t.start}</strong>)}
+          </p>
+        )}
       </div>
     </>
   )
