@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Creature from './Creature'
 import { useI18n } from '../i18n/context'
 import { type Locale } from '../i18n/translations.tsx'
 import { useHelp, useSettings } from '../routes/__root'
@@ -651,6 +652,9 @@ export default function VolumeMeter() {
 
   return (
     <>
+      {/* Background creature — reacts to volume */}
+      <Creature barPercent={barPercent} active={phase === 'active'} />
+
       {/* Help overlay */}
       <HelpOverlay open={helpOpen} onClose={closeHelp} />
 
