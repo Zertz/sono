@@ -671,24 +671,6 @@ export default function VolumeMeter() {
       />
 
       <div className="flex w-full max-w-2xl flex-col gap-6">
-        {/* Warning banner */}
-        <div
-          aria-live="assertive"
-          aria-atomic="true"
-          className={`volume-warning-banner rounded-2xl px-6 py-4 text-center transition-all duration-300 ${
-            isWarning
-              ? 'visible opacity-100'
-              : 'pointer-events-none invisible opacity-0'
-          }`}
-        >
-          <p className="m-0 text-2xl font-bold tracking-tight text-white">
-            {t.tooLoud}
-          </p>
-          <p className="m-0 mt-0.5 text-sm text-red-100">
-            {t.volumeAboveThreshold}
-          </p>
-        </div>
-
         {/* Meter card */}
         <div className="island-shell rounded-2xl p-6 sm:p-8">
           <div className="mb-6 flex items-center justify-between">
