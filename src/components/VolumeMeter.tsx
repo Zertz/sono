@@ -441,6 +441,9 @@ export default function VolumeMeter() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const ctx = new AudioContext()
+      // iOS requires an explicit resume() — the context starts suspended
+      // even after a user gesture on Safari/WebKit
+      await ctx.resume()
       const source = ctx.createMediaStreamSource(stream)
       const analyser = ctx.createAnalyser()
       analyser.fftSize = 2048
@@ -459,7 +462,16 @@ export default function VolumeMeter() {
 
   const tick = useCallback(() => {
     const analyser = analyserRef.current
-    if (!analyser) return
+    const ctx = audioCtxRef.current
+    if (!analyser || !ctx) return
+
+    // iOS suspends the AudioContext when the page is backgrounded or the
+    // screen locks. Resume it and skip this frame — data would be stale zeros.
+    if (ctx.state === 'suspended') {
+      ctx.resume()
+      rafRef.current = requestAnimationFrame(tick)
+      return
+    }
 
     const buf = new Float32Array(analyser.fftSize)
     analyser.getFloatTimeDomainData(buf)
@@ -579,6 +591,17 @@ export default function VolumeMeter() {
       stopAudio()
     }
   }, [stopAudio])
+
+  // Resume AudioContext when the user returns to the page (iOS backgrounding)
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible' && audioCtxRef.current?.state === 'suspended') {
+        audioCtxRef.current.resume()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
 
   const warningHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
