@@ -25,6 +25,7 @@ export interface Translations {
   idlePrompt: (startLabel: React.ReactNode) => React.ReactNode
   // Volume meter — settings card
   settings: string
+  adjust: string
   alertThreshold: string
   thresholdValue: (n: number) => string
   moreSensitive: string
@@ -72,6 +73,7 @@ export const translations: Record<Locale, Translations> = {
       <>Press {startLabel} to begin monitoring. You'll be asked for microphone access.</>
     ),
     settings: 'Settings',
+    adjust: 'Adjust',
     alertThreshold: 'Alert threshold',
     thresholdValue: (n) => `+${n} dB above baseline`,
     moreSensitive: 'Quieter',
@@ -119,6 +121,7 @@ export const translations: Record<Locale, Translations> = {
       <>Appuyez sur {startLabel} pour commencer. L'accès au microphone sera demandé.</>
     ),
     settings: 'Paramètres',
+    adjust: 'Ajuster',
     alertThreshold: "Seuil d'alerte",
     thresholdValue: (n) => `+${n} dB au-dessus de la base`,
     moreSensitive: 'Plus calme',
@@ -166,6 +169,7 @@ export const translations: Record<Locale, Translations> = {
       <>Pulsa {startLabel} para comenzar. Se solicitará acceso al micrófono.</>
     ),
     settings: 'Ajustes',
+    adjust: 'Ajustar',
     alertThreshold: 'Umbral de alerta',
     thresholdValue: (n) => `+${n} dB sobre la base`,
     moreSensitive: 'Más silencioso',

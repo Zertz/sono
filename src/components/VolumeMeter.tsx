@@ -84,11 +84,6 @@ type Phase = 'idle' | 'calibrating' | 'active'
 interface SettingsOverlayProps {
   open: boolean
   onClose: () => void
-  // settings content props
-  threshold: number
-  onThresholdChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  baseline: number
-  onCalibrate: () => void
   themeMode: ThemeMode
   onThemeMode: (mode: ThemeMode) => void
 }
@@ -96,10 +91,6 @@ interface SettingsOverlayProps {
 function SettingsOverlay({
   open,
   onClose,
-  threshold,
-  onThresholdChange,
-  baseline,
-  onCalibrate,
   themeMode,
   onThemeMode,
 }: SettingsOverlayProps) {
@@ -149,60 +140,6 @@ function SettingsOverlay({
         </div>
 
         <div className="space-y-5">
-          {/* Threshold */}
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label
-                htmlFor="threshold-slider"
-                className="text-sm font-semibold text-[var(--sea-ink)]"
-              >
-                {t.alertThreshold}
-              </label>
-              <span className="text-sm tabular-nums text-[var(--sea-ink-soft)]">
-                {t.thresholdValue(threshold)}
-              </span>
-            </div>
-            <input
-              id="threshold-slider"
-              type="range"
-              min={5}
-              max={50}
-              step={1}
-              value={threshold}
-              onChange={onThresholdChange}
-              className="volume-slider w-full"
-            />
-            <div className="mt-1 flex justify-between text-xs text-[var(--sea-ink-soft)]">
-              <span>{t.moreSensitive}</span>
-              <span>{t.lessSensitive}</span>
-            </div>
-          </div>
-
-          {/* Baseline info */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="m-0 text-sm font-semibold text-[var(--sea-ink)]">
-                {t.baselineTitle}
-              </p>
-              <p className="m-0 text-xs text-[var(--sea-ink-soft)]">
-                {t.baselineSubtitle}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-base font-bold tabular-nums text-[var(--sea-ink)]">
-                {Math.round(baseline)} {t.dbUnit}
-              </span>
-              <button
-                onClick={onCalibrate}
-                className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
-              >
-                {t.recalibrate}
-              </button>
-            </div>
-          </div>
-
-          <hr className="border-[var(--line)]" />
-
           {/* Language */}
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-[var(--sea-ink)]">
@@ -392,6 +329,7 @@ export default function VolumeMeter() {
   }
 
   const [phase, setPhase] = useState<Phase>('idle')
+  const [adjustOpen, setAdjustOpen] = useState(false)
   const [volume, setVolume] = useState(0) // 0-100 dB scale — used for bar + warning
   const [displayVolume, setDisplayVolume] = useState(0) // EMA-smoothed, throttled — used for the label
   const [baseline, setBaseline] = useState(30)
@@ -662,10 +600,6 @@ export default function VolumeMeter() {
       <SettingsOverlay
         open={settingsOpen}
         onClose={closeSettings}
-        threshold={threshold}
-        onThresholdChange={handleThresholdChange}
-        baseline={baseline}
-        onCalibrate={handleCalibrate}
         themeMode={themeMode}
         onThemeMode={handleThemeMode}
       />
@@ -760,6 +694,92 @@ export default function VolumeMeter() {
               {t.idlePrompt(<strong>{t.start}</strong>)}
             </p>
           )}
+
+          {/* Expand/collapse footer — threshold + recalibrate */}
+          <div className="mt-5 border-t border-[var(--line)]">
+            <button
+              onClick={() => setAdjustOpen((o) => !o)}
+              className="flex w-full items-center justify-between pt-3 text-xs font-semibold text-[var(--sea-ink-soft)] transition hover:text-[var(--sea-ink)]"
+            >
+              <span className="flex items-center gap-1.5">
+                {/* sliders icon */}
+                <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+                  <line x1="2" y1="4" x2="14" y2="4" />
+                  <line x1="2" y1="8" x2="14" y2="8" />
+                  <line x1="2" y1="12" x2="14" y2="12" />
+                  <circle cx="5" cy="4" r="1.5" fill="currentColor" stroke="none" />
+                  <circle cx="10" cy="8" r="1.5" fill="currentColor" stroke="none" />
+                  <circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                </svg>
+                {t.adjust}
+              </span>
+              <svg
+                viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"
+                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                style={{ transform: adjustOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }}
+              >
+                <polyline points="4 6 8 10 12 6" />
+              </svg>
+            </button>
+
+            {/* Collapsible body */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateRows: adjustOpen ? '1fr' : '0fr',
+                transition: 'grid-template-rows 250ms cubic-bezier(0.16,1,0.3,1)',
+              }}
+            >
+              <div style={{ overflow: 'hidden' }}>
+                <div className="space-y-4 pb-1 pt-4">
+                  {/* Threshold slider */}
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <label htmlFor="card-threshold-slider" className="text-sm font-semibold text-[var(--sea-ink)]">
+                        {t.alertThreshold}
+                      </label>
+                      <span className="text-sm tabular-nums text-[var(--sea-ink-soft)]">
+                        {t.thresholdValue(threshold)}
+                      </span>
+                    </div>
+                    <input
+                      id="card-threshold-slider"
+                      type="range"
+                      min={1}
+                      max={100}
+                      step={1}
+                      value={threshold}
+                      onChange={handleThresholdChange}
+                      className="volume-slider w-full"
+                    />
+                    <div className="mt-1 flex justify-between text-xs text-[var(--sea-ink-soft)]">
+                      <span>{t.moreSensitive}</span>
+                      <span>{t.lessSensitive}</span>
+                    </div>
+                  </div>
+
+                  {/* Recalibrate */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="m-0 text-sm font-semibold text-[var(--sea-ink)]">{t.baselineTitle}</p>
+                      <p className="m-0 text-xs text-[var(--sea-ink-soft)]">{t.baselineSubtitle}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold tabular-nums text-[var(--sea-ink)]">
+                        {Math.round(baseline)} {t.dbUnit}
+                      </span>
+                      <button
+                        onClick={handleCalibrate}
+                        className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
+                      >
+                        {t.recalibrate}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>
