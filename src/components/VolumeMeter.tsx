@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Creature from './Creature'
+import SegmentedControl from './SegmentedControl'
 import { useI18n } from '../i18n/context'
 import { type Locale } from '../i18n/translations.tsx'
 import { useHelp, useSettings } from '../routes/__root'
@@ -150,56 +151,24 @@ function SettingsOverlay({
 
         <div className="space-y-5">
           {/* Language */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-[var(--sea-ink)]">
-              {t.language}
-            </span>
-            <div className="flex items-center rounded-full border border-[var(--line)] bg-[var(--chip-bg)] p-0.5">
-              {LOCALES.map(({ code, label }) => (
-                <button
-                  key={code}
-                  onClick={() => setLocale(code)}
-                  aria-pressed={locale === code}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                    locale === code
-                      ? 'bg-[var(--lagoon-deep)] text-white shadow-sm'
-                      : 'text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <SegmentedControl
+            label={t.language}
+            options={LOCALES.map(({ code, label }) => ({ value: code, label }))}
+            value={locale}
+            onChange={setLocale}
+          />
 
           {/* Theme */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-[var(--sea-ink)]">
-              {t.theme}
-            </span>
-            <div className="flex items-center rounded-full border border-[var(--line)] bg-[var(--chip-bg)] p-0.5">
-              {(
-                [
-                  { mode: 'auto', label: t.themeAuto },
-                  { mode: 'dark', label: t.themeDark },
-                  { mode: 'light', label: t.themeLight },
-                ] as { mode: ThemeMode; label: string }[]
-              ).map(({ mode, label }) => (
-                <button
-                  key={mode}
-                  onClick={() => onThemeMode(mode)}
-                  aria-pressed={themeMode === mode}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                    themeMode === mode
-                      ? 'bg-[var(--lagoon-deep)] text-white shadow-sm'
-                      : 'text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <SegmentedControl
+            label={t.theme}
+            options={[
+              { value: 'auto' as ThemeMode, label: t.themeAuto },
+              { value: 'dark' as ThemeMode, label: t.themeDark },
+              { value: 'light' as ThemeMode, label: t.themeLight },
+            ]}
+            value={themeMode}
+            onChange={onThemeMode}
+          />
         </div>
         </div>
       </div>
@@ -847,31 +816,15 @@ export default function VolumeMeter() {
               </>
             ) : (
               /* No active countdown: duration label + preset picker */
-              <>
-                <span className="shrink-0 text-sm font-semibold text-[var(--sea-ink)]">
-                  {t.duration}
-                </span>
-                <div className="flex items-center rounded-full border border-[var(--line)] bg-[var(--chip-bg)] p-0.5">
-                  {DURATION_PRESETS.map((preset) => {
-                    const label = preset === null ? t.durationNone : t.durationMinutes(preset)
-                    const isActive = duration === preset
-                    return (
-                      <button
-                        key={String(preset)}
-                        onClick={() => handleDurationSelect(preset)}
-                        aria-pressed={isActive}
-                        className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                          isActive
-                            ? 'bg-[var(--lagoon-deep)] text-white shadow-sm'
-                            : 'text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </>
+              <SegmentedControl
+                label={t.duration}
+                options={DURATION_PRESETS.map((preset) => ({
+                  value: preset,
+                  label: preset === null ? t.durationNone : t.durationMinutes(preset),
+                }))}
+                value={duration}
+                onChange={handleDurationSelect}
+              />
             )}
           </div>
 
