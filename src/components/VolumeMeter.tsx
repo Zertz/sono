@@ -776,10 +776,8 @@ export default function VolumeMeter() {
           <div className="mb-6 flex items-center justify-between">
             <div>
               <p className="island-kicker mb-1">{t.volumeLevel}</p>
-              <p className="m-0 text-3xl font-bold tabular-nums text-[var(--sea-ink)]">
-                {phase === 'active' || phase === 'calibrating'
-                  ? `${Math.round(displayVolume)}`
-                  : '--'}
+              <p className="m-0 text-3xl font-bold tabular-nums text-[var(--sea-ink)]" style={{ visibility: phase === 'active' || phase === 'calibrating' ? 'visible' : 'hidden' }}>
+                {Math.round(displayVolume)}
                 <span className="ml-1 text-base font-normal text-[var(--sea-ink-soft)]">
                   {t.dbUnit}
                 </span>
@@ -877,24 +875,6 @@ export default function VolumeMeter() {
             )}
           </div>
 
-          {/* Calibration progress */}
-          {phase === 'calibrating' && (
-            <div className="mt-4">
-              <p className="mb-2 text-sm text-[var(--sea-ink-soft)]">
-                {t.calibratingMessage}
-              </p>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--line)]">
-                <div
-                  className="h-full rounded-full bg-[var(--lagoon)] transition-all"
-                  style={{
-                    width: `${calibrationProgress}%`,
-                    transitionDuration: '80ms',
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
           {permissionDenied && (
             <p className="mt-4 text-sm text-red-500">{t.micDenied}</p>
           )}
@@ -969,24 +949,41 @@ export default function VolumeMeter() {
                     </div>
                   </div>
 
-                  {/* Recalibrate */}
-                  <div className="flex items-center justify-between">
+                  {/* Recalibrate / calibration progress */}
+                  {phase === 'calibrating' ? (
                     <div>
-                      <p className="m-0 text-sm font-semibold text-[var(--sea-ink)]">{t.baselineTitle}</p>
-                      <p className="m-0 text-xs text-[var(--sea-ink-soft)]">{t.baselineSubtitle}</p>
+                      <p className="mb-2 text-xs text-[var(--sea-ink-soft)]">
+                        {t.calibratingMessage}
+                      </p>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--line)]">
+                        <div
+                          className="h-full rounded-full bg-[var(--lagoon)] transition-all"
+                          style={{
+                            width: `${calibrationProgress}%`,
+                            transitionDuration: '80ms',
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold tabular-nums text-[var(--sea-ink)]">
-                        {Math.round(baseline)} {t.dbUnit}
-                      </span>
-                      <button
-                        onClick={handleCalibrate}
-                        className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
-                      >
-                        {t.recalibrate}
-                      </button>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="m-0 text-sm font-semibold text-[var(--sea-ink)]">{t.baselineTitle}</p>
+                        <p className="m-0 text-xs text-[var(--sea-ink-soft)]">{t.baselineSubtitle}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold tabular-nums text-[var(--sea-ink)]">
+                          {Math.round(baseline)} {t.dbUnit}
+                        </span>
+                        <button
+                          onClick={handleCalibrate}
+                          className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
+                        >
+                          {t.recalibrate}
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
