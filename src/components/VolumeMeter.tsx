@@ -950,13 +950,13 @@ export default function VolumeMeter() {
                         <p className="m-0 text-sm font-semibold text-[var(--sea-ink)]">{t.baselineTitle}</p>
                         <p className="m-0 text-xs text-[var(--sea-ink-soft)]">{t.baselineSubtitle}</p>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex shrink-0 items-center gap-3">
                         <span className="text-sm font-bold tabular-nums text-[var(--sea-ink)]">
                           {Math.round(baseline)} {t.dbUnit}
                         </span>
                         <button
                           onClick={handleCalibrate}
-                          className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
+                          className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)] whitespace-nowrap"
                         >
                           {t.recalibrate}
                         </button>

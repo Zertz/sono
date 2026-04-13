@@ -18,7 +18,7 @@ export default function SegmentedControl<T extends string | number | null>({
 }: SegmentedControlProps<T>) {
   return (
     <div className="flex w-full items-center justify-between">
-      <span className="text-sm font-semibold text-[var(--sea-ink)]">{label}</span>
+      <span className="hidden sm:inline text-sm font-semibold text-[var(--sea-ink)]">{label}</span>
       <div className="flex items-center rounded-full border border-[var(--line)] bg-[var(--chip-bg)] p-0.5">
         {options.map((option) => (
           <button
