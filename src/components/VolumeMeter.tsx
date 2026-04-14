@@ -38,7 +38,7 @@ const LOCALES: { code: Locale; label: string }[] = [
 
 const STORAGE_KEY_BASELINE = 'sono_baseline'
 const STORAGE_KEY_THRESHOLD = 'sono_threshold'
-const DEFAULT_THRESHOLD = 20 // dB above baseline before warning
+const DEFAULT_THRESHOLD = 50 // dB above baseline before warning
 const CALIBRATION_DURATION = 3000 // ms
 
 // Duration presets: null = no limit, number = minutes
@@ -420,7 +420,7 @@ export default function VolumeMeter() {
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [volume, setVolume] = useState(0) // 0-100 dB scale — used for bar + warning
   const [displayVolume, setDisplayVolume] = useState(0) // EMA-smoothed, throttled — used for the label
-  const [baseline, setBaseline] = useState(30)
+  const [baseline, setBaseline] = useState(20)
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD)
   const [isWarning, setIsWarning] = useState(false)
   const [calibrationProgress, setCalibrationProgress] = useState(0)
@@ -432,7 +432,7 @@ export default function VolumeMeter() {
 
   // Read persisted values on the client after hydration
   useEffect(() => {
-    setBaseline(readStorage(STORAGE_KEY_BASELINE, 30))
+    setBaseline(readStorage(STORAGE_KEY_BASELINE, 20))
     setThreshold(readStorage(STORAGE_KEY_THRESHOLD, DEFAULT_THRESHOLD))
   }, [])
 
