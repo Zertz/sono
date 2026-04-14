@@ -5,6 +5,7 @@ export type Locale = 'en' | 'fr' | 'es'
 export interface Translations {
   // Header
   githubLabel: string
+  contributeOnGitHub: string
   // Help overlay
   help: string
   helpIosTitle: string
@@ -49,6 +50,7 @@ export interface Translations {
 export const translations: Record<Locale, Translations> = {
   en: {
     githubLabel: 'View Sono on GitHub',
+    contributeOnGitHub: 'Contribute on GitHub',
     help: 'Help',
     helpIosTitle: 'iOS — Microphone Access',
     helpIosSafariTitle: 'Safari',
@@ -102,6 +104,7 @@ export const translations: Record<Locale, Translations> = {
 
   fr: {
     githubLabel: 'Voir Sono sur GitHub',
+    contributeOnGitHub: 'Contribuer sur GitHub',
     help: 'Aide',
     helpIosTitle: 'iOS — Accès au microphone',
     helpIosSafariTitle: 'Safari',
@@ -156,6 +159,7 @@ export const translations: Record<Locale, Translations> = {
 
   es: {
     githubLabel: 'Ver Sono en GitHub',
+    contributeOnGitHub: 'Contribuir en GitHub',
     help: 'Ayuda',
     helpIosTitle: 'iOS — Acceso al micrófono',
     helpIosSafariTitle: 'Safari',
