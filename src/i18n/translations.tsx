@@ -31,7 +31,6 @@ export interface Translations {
   stopTimer: string
   sessionEnded: string
   // Volume meter — settings card
-  settings: string
   adjust: string
   alertThreshold: string
   thresholdValue: (n: number) => string

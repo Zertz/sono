@@ -10,25 +10,6 @@ import appCss from '../styles.css?url'
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
 
 // ---------------------------------------------------------------------------
-// Settings overlay context — shared between Header (trigger) and VolumeMeter (panel)
-// ---------------------------------------------------------------------------
-interface SettingsContextValue {
-  settingsOpen: boolean
-  toggleSettings: () => void
-  closeSettings: () => void
-}
-
-export const SettingsContext = createContext<SettingsContextValue>({
-  settingsOpen: false,
-  toggleSettings: () => {},
-  closeSettings: () => {},
-})
-
-export function useSettings() {
-  return useContext(SettingsContext)
-}
-
-// ---------------------------------------------------------------------------
 // Help overlay context — shared between Header (trigger) and VolumeMeter (panel)
 // ---------------------------------------------------------------------------
 interface HelpContextValue {
@@ -74,23 +55,9 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
 
-  const toggleSettings = useCallback(() => {
-    setSettingsOpen((o) => {
-      if (!o) setHelpOpen(false)
-      return !o
-    })
-  }, [])
-  const closeSettings = useCallback(() => setSettingsOpen(false), [])
-
-  const toggleHelp = useCallback(() => {
-    setHelpOpen((o) => {
-      if (!o) setSettingsOpen(false)
-      return !o
-    })
-  }, [])
+  const toggleHelp = useCallback(() => setHelpOpen((o) => !o), [])
   const closeHelp = useCallback(() => setHelpOpen(false), [])
 
   return (
@@ -101,12 +68,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="flex h-full flex-col font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
         <I18nProvider>
-          <SettingsContext value={{ settingsOpen, toggleSettings, closeSettings }}>
-            <HelpContext value={{ helpOpen, toggleHelp, closeHelp }}>
-              <Header />
-              {children}
-            </HelpContext>
-          </SettingsContext>
+          <HelpContext value={{ helpOpen, toggleHelp, closeHelp }}>
+            <Header />
+            {children}
+          </HelpContext>
         </I18nProvider>
         <TanStackDevtools
           config={{

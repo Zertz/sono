@@ -4,37 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Creature from './Creature'
 import SegmentedControl from './SegmentedControl'
 import { useI18n } from '../i18n/context'
-import { type Locale } from '../i18n/translations.tsx'
-import { useHelp, useSettings } from '../routes/__root'
-
-type ThemeMode = 'light' | 'dark' | 'auto'
-
-function getThemeMode(): ThemeMode {
-  if (typeof window === 'undefined') return 'auto'
-  const stored = window.localStorage.getItem('theme')
-  if (stored === 'light' || stored === 'dark' || stored === 'auto') return stored
-  return 'auto'
-}
-
-function applyThemeMode(mode: ThemeMode) {
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const resolved = mode === 'auto' ? (prefersDark ? 'dark' : 'light') : mode
-  document.documentElement.classList.remove('light', 'dark')
-  document.documentElement.classList.add(resolved)
-  if (mode === 'auto') {
-    document.documentElement.removeAttribute('data-theme')
-  } else {
-    document.documentElement.setAttribute('data-theme', mode)
-  }
-  document.documentElement.style.colorScheme = resolved
-  window.localStorage.setItem('theme', mode)
-}
-
-const LOCALES: { code: Locale; label: string }[] = [
-  { code: 'en', label: 'EN' },
-  { code: 'es', label: 'ES' },
-  { code: 'fr', label: 'FR' },
-]
+import { useHelp } from '../routes/__root'
 
 const STORAGE_KEY_BASELINE = 'sono_baseline'
 const STORAGE_KEY_THRESHOLD = 'sono_threshold'
@@ -86,95 +56,6 @@ function playAlertTone(audioCtx: AudioContext) {
 }
 
 type Phase = 'idle' | 'calibrating' | 'active'
-
-// ---------------------------------------------------------------------------
-// Settings overlay
-// ---------------------------------------------------------------------------
-
-interface SettingsOverlayProps {
-  open: boolean
-  onClose: () => void
-  themeMode: ThemeMode
-  onThemeMode: (mode: ThemeMode) => void
-}
-
-function SettingsOverlay({
-  open,
-  onClose,
-  themeMode,
-  onThemeMode,
-}: SettingsOverlayProps) {
-  const { t, locale, setLocale } = useI18n()
-  const overlayRef = useRef<HTMLDivElement>(null)
-  const gearButtonSelector = '[aria-label="' + t.settings + '"]'
-
-  // Click-outside to close
-  useEffect(() => {
-    if (!open) return
-    function handleMouseDown(e: MouseEvent) {
-      const target = e.target as Node
-      // Ignore clicks on the gear button itself (it handles toggle)
-      const gearBtn = document.querySelector(gearButtonSelector)
-      if (gearBtn && gearBtn.contains(target)) return
-      if (overlayRef.current && !overlayRef.current.contains(target)) {
-        onClose()
-      }
-    }
-    document.addEventListener('mousedown', handleMouseDown)
-    return () => document.removeEventListener('mousedown', handleMouseDown)
-  }, [open, onClose, gearButtonSelector])
-
-  return (
-    <div
-      className={`settings-overlay pointer-events-none fixed inset-x-0 top-[57px] z-50 origin-top sm:top-[65px] ${open ? 'settings-overlay-open' : ''}`}
-    >
-      {/* Full-width backdrop strip */}
-      <div ref={overlayRef} className="settings-overlay-backdrop border-b border-[var(--line)] px-4 py-5">
-        {/* Centered content — max-w-2xl matches the meter card */}
-        <div className="mx-auto w-full max-w-2xl">
-        {/* Header row */}
-        <div className="mb-4 flex items-center justify-between">
-          <p className="island-kicker m-0">{t.settings}</p>
-          <button
-            onClick={onClose}
-            aria-label="Close settings"
-            className="rounded-lg p-1 text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
-          >
-            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <div className="space-y-5">
-          {/* Language */}
-          <SegmentedControl
-            label={t.language}
-            options={LOCALES.map(({ code, label }) => ({ value: code, label }))}
-            value={locale}
-            onChange={setLocale}
-          />
-
-          {/* Theme */}
-          <SegmentedControl
-            label={t.theme}
-            options={[
-              { value: 'auto' as ThemeMode, label: t.themeAuto },
-              { value: 'dark' as ThemeMode, label: t.themeDark },
-              { value: 'light' as ThemeMode, label: t.themeLight },
-            ]}
-            value={themeMode}
-            onChange={onThemeMode}
-          />
-        </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ---------------------------------------------------------------------------
 // Help overlay
@@ -407,29 +288,7 @@ function TimerRing({ timeLeft, totalSeconds, containerRef }: TimerRingProps) {
 
 export default function VolumeMeter() {
   const { t } = useI18n()
-  const { settingsOpen, closeSettings } = useSettings()
   const { helpOpen, closeHelp } = useHelp()
-
-  const [themeMode, setThemeMode] = useState<ThemeMode>('auto')
-
-  useEffect(() => {
-    const mode = getThemeMode()
-    setThemeMode(mode)
-    applyThemeMode(mode)
-  }, [])
-
-  useEffect(() => {
-    if (themeMode !== 'auto') return
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = () => applyThemeMode('auto')
-    media.addEventListener('change', onChange)
-    return () => media.removeEventListener('change', onChange)
-  }, [themeMode])
-
-  function handleThemeMode(mode: ThemeMode) {
-    setThemeMode(mode)
-    applyThemeMode(mode)
-  }
 
   const [phase, setPhase] = useState<Phase>('idle')
   const [adjustOpen, setAdjustOpen] = useState(false)
@@ -768,14 +627,6 @@ export default function VolumeMeter() {
 
       {/* Help overlay */}
       <HelpOverlay open={helpOpen} onClose={closeHelp} />
-
-      {/* Settings overlay — rendered outside the meter card so it floats freely */}
-      <SettingsOverlay
-        open={settingsOpen}
-        onClose={closeSettings}
-        themeMode={themeMode}
-        onThemeMode={handleThemeMode}
-      />
 
       <div className="flex w-full max-w-2xl flex-col gap-2">
         {/* Meter card — p-[6px] gap always reserved for the timer ring (no layout shift) */}
