@@ -504,17 +504,15 @@ export default function VolumeMeter() {
     }, CALIBRATION_DURATION)
   }, [phase, stopAudio, startAudio, calibTick, tick])
 
-  const handleStart = useCallback(async (durationOverride?: number | null) => {
+  const handleStart = useCallback(async () => {
     if (phase !== 'idle') return
     setPermissionDenied(false)
     setSessionEnded(false)
     const ok = await startAudio()
     if (!ok) return
-    const activeDuration = durationOverride !== undefined ? durationOverride : duration
     setPhase('active')
-    setTimeLeft(activeDuration !== null ? activeDuration * 60 : null)
     rafRef.current = requestAnimationFrame(tick)
-  }, [phase, startAudio, tick, duration])
+  }, [phase, startAudio, tick])
 
   const handleDurationSelect = useCallback(async (preset: number | null) => {
     setDuration(preset)
@@ -543,6 +541,7 @@ export default function VolumeMeter() {
     setPhase('idle')
     setVolume(0)
     setDisplayVolume(0)
+    setDuration(null)
     setTimeLeft(null)
     emaVolumeRef.current = 0
     if (barMaskRef.current) barMaskRef.current.style.width = '100%'
