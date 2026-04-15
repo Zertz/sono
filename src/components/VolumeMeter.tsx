@@ -20,6 +20,14 @@ function formatMmSs(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
+export function getTimeLeftOnStart(
+  duration: number | null,
+  durationOverride?: number | null,
+): number | null {
+  const activeDuration = durationOverride !== undefined ? durationOverride : duration
+  return activeDuration !== null ? activeDuration * 60 : null
+}
+
 function readStorage(key: string, fallback: number): number {
   if (typeof window === 'undefined') return fallback
   const val = window.localStorage.getItem(key)
@@ -510,9 +518,8 @@ export default function VolumeMeter() {
     setSessionEnded(false)
     const ok = await startAudio()
     if (!ok) return
-    const activeDuration = durationOverride !== undefined ? durationOverride : duration
     setPhase('active')
-    setTimeLeft(activeDuration !== null ? activeDuration * 60 : null)
+    setTimeLeft(getTimeLeftOnStart(duration, durationOverride))
     rafRef.current = requestAnimationFrame(tick)
   }, [phase, startAudio, tick, duration])
 
@@ -543,6 +550,7 @@ export default function VolumeMeter() {
     setPhase('idle')
     setVolume(0)
     setDisplayVolume(0)
+    setDuration(null)
     setTimeLeft(null)
     emaVolumeRef.current = 0
     if (barMaskRef.current) barMaskRef.current.style.width = '100%'
