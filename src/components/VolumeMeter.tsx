@@ -20,14 +20,6 @@ function formatMmSs(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-export function getTimeLeftOnStart(
-  duration: number | null,
-  durationOverride?: number | null,
-): number | null {
-  const activeDuration = durationOverride !== undefined ? durationOverride : duration
-  return activeDuration !== null ? activeDuration * 60 : null
-}
-
 function readStorage(key: string, fallback: number): number {
   if (typeof window === 'undefined') return fallback
   const val = window.localStorage.getItem(key)
@@ -512,14 +504,14 @@ export default function VolumeMeter() {
     }, CALIBRATION_DURATION)
   }, [phase, stopAudio, startAudio, calibTick, tick])
 
-  const handleStart = useCallback(async (durationOverride?: number | null) => {
+  const handleStart = useCallback(async () => {
     if (phase !== 'idle') return
     setPermissionDenied(false)
     setSessionEnded(false)
     const ok = await startAudio()
     if (!ok) return
     setPhase('active')
-    setTimeLeft(getTimeLeftOnStart(duration, durationOverride))
+    setTimeLeft(duration !== null ? duration * 60 : null)
     rafRef.current = requestAnimationFrame(tick)
   }, [phase, startAudio, tick, duration])
 
