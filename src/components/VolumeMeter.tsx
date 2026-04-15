@@ -511,9 +511,8 @@ export default function VolumeMeter() {
     const ok = await startAudio()
     if (!ok) return
     setPhase('active')
-    setTimeLeft(duration !== null ? duration * 60 : null)
     rafRef.current = requestAnimationFrame(tick)
-  }, [phase, startAudio, tick, duration])
+  }, [phase, startAudio, tick])
 
   const handleDurationSelect = useCallback(async (preset: number | null) => {
     setDuration(preset)
