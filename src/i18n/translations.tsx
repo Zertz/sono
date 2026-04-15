@@ -1,5 +1,3 @@
-import type React from 'react'
-
 export type Locale = 'en' | 'fr' | 'es'
 
 export interface Translations {
@@ -23,7 +21,8 @@ export interface Translations {
   stop: string
   calibratingMessage: string
   micDenied: string
-  idlePrompt: (startLabel: React.ReactNode) => React.ReactNode
+  idlePromptLine1: string
+  idlePromptLine2: string
   duration: string
   durationNone: string
   durationMinutes: (n: number) => string
@@ -76,9 +75,8 @@ export const translations: Record<Locale, Translations> = {
     calibratingMessage: 'Measuring ambient noise… stay quiet for a moment',
     micDenied:
       'Microphone access was denied. Please allow microphone permissions and try again.',
-    idlePrompt: (startLabel) => (
-      <>Press {startLabel} to begin monitoring. You'll be asked for microphone access.</>
-    ),
+    idlePromptLine1: 'Press Start to begin.',
+    idlePromptLine2: "You'll be asked for microphone access.",
     duration: 'Duration',
     durationNone: 'No limit',
     durationMinutes: (n) => `${n} min`,
@@ -131,9 +129,8 @@ export const translations: Record<Locale, Translations> = {
       'Mesure du bruit ambiant… restez silencieux un instant',
     micDenied:
       "L'accès au microphone a été refusé. Veuillez autoriser le microphone et réessayer.",
-    idlePrompt: (startLabel) => (
-      <>Appuyez sur {startLabel} pour commencer. L'accès au microphone sera demandé.</>
-    ),
+    idlePromptLine1: 'Appuyez sur Démarrer pour commencer.',
+    idlePromptLine2: "L'accès au microphone sera demandé.",
     duration: 'Durée',
     durationNone: 'Sans limite',
     durationMinutes: (n) => `${n} min`,
@@ -186,9 +183,8 @@ export const translations: Record<Locale, Translations> = {
       'Midiendo el ruido ambiental… quédate en silencio un momento',
     micDenied:
       'Se denegó el acceso al micrófono. Permite el acceso al micrófono e inténtalo de nuevo.',
-    idlePrompt: (startLabel) => (
-      <>Pulsa {startLabel} para comenzar. Se solicitará acceso al micrófono.</>
-    ),
+    idlePromptLine1: 'Pulsa Iniciar para comenzar.',
+    idlePromptLine2: 'Se solicitará acceso al micrófono.',
     duration: 'Duración',
     durationNone: 'Sin límite',
     durationMinutes: (n) => `${n} min`,
