@@ -690,32 +690,49 @@ export default function VolumeMeter() {
             </div>
           </div>
 
-          {/* Timer controls — always reserves space; invisible when meter is not running */}
-          <div className="mt-4 flex items-center justify-between gap-3 min-h-[2rem]" style={{ visibility: phase === 'active' ? 'visible' : 'hidden' }}>
-            {timeLeft !== null ? (
-              /* Running timer: countdown + stop button */
-              <>
-                <span className="text-sm tabular-nums text-[var(--sea-ink-soft)]">
-                  {formatMmSs(timeLeft)}
-                </span>
-                <button
-                  onClick={() => { setTimeLeft(null); setDuration(null) }}
-                  className="rounded-full border border-[var(--line)] px-3 py-1 text-xs font-medium text-[var(--sea-ink-soft)] transition hover:border-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]"
-                >
-                  {t.stopTimer}
-                </button>
-              </>
+          {/* Timer controls / idle tip area */}
+          <div className="mt-4 min-h-[2rem]">
+            {phase === 'idle' ? (
+              <p className="text-center text-sm text-[var(--sea-ink-soft)]">
+                <span>{t.idlePromptLine1}</span>
+                {!micPermissionGranted && (
+                  <>
+                    <br />
+                    <span>{t.idlePromptLine2}</span>
+                  </>
+                )}
+              </p>
             ) : (
-              /* No active countdown: duration label + preset picker */
-              <SegmentedControl
-                label={t.duration}
-                options={DURATION_PRESETS.map((preset) => ({
-                  value: preset,
-                  label: preset === null ? t.durationNone : t.durationMinutes(preset),
-                }))}
-                value={duration}
-                onChange={handleDurationSelect}
-              />
+              <div
+                className="flex items-center justify-between gap-3"
+                style={{ visibility: phase === 'active' ? 'visible' : 'hidden' }}
+              >
+                {timeLeft !== null ? (
+                  /* Running timer: countdown + stop button */
+                  <>
+                    <span className="text-sm tabular-nums text-[var(--sea-ink-soft)]">
+                      {formatMmSs(timeLeft)}
+                    </span>
+                    <button
+                      onClick={() => { setTimeLeft(null); setDuration(null) }}
+                      className="rounded-full border border-[var(--line)] px-3 py-1 text-xs font-medium text-[var(--sea-ink-soft)] transition hover:border-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]"
+                    >
+                      {t.stopTimer}
+                    </button>
+                  </>
+                ) : (
+                  /* No active countdown: duration label + preset picker */
+                  <SegmentedControl
+                    label={t.duration}
+                    options={DURATION_PRESETS.map((preset) => ({
+                      value: preset,
+                      label: preset === null ? t.durationNone : t.durationMinutes(preset),
+                    }))}
+                    value={duration}
+                    onChange={handleDurationSelect}
+                  />
+                )}
+              </div>
             )}
           </div>
 
@@ -836,12 +853,6 @@ export default function VolumeMeter() {
         {/* end timer ring wrapper */}
         </div>
 
-        {/* Idle tip — below the card, centered */}
-        {phase === 'idle' && !permissionDenied && !sessionEnded && !micPermissionGranted && (
-          <p className="text-center text-sm text-[var(--sea-ink-soft)]">
-            {t.idlePrompt(<strong>{t.start}</strong>)}
-          </p>
-        )}
       </div>
     </>
   )
