@@ -14,8 +14,7 @@ function detectLocale(): Locale {
   const stored = window.localStorage.getItem(STORAGE_KEY) as Locale | null
   if (stored && stored in translations) return stored
   const lang = navigator.language.slice(0, 2).toLowerCase()
-  if (lang === 'fr') return 'fr'
-  if (lang === 'es') return 'es'
+  if (lang in translations) return lang as Locale
   return 'en'
 }
 
