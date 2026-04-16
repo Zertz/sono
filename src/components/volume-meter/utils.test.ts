@@ -11,6 +11,7 @@ describe('volume-meter utils', () => {
   it('maps RMS amplitude to a clamped 0-100 dB-like range', () => {
     expect(rmsToDb(0)).toBe(0)
     expect(rmsToDb(0.001)).toBe(0)
+    expect(rmsToDb(0.1)).toBeCloseTo(66.67, 2)
     expect(rmsToDb(1)).toBe(100)
   })
 })
