@@ -10,6 +10,9 @@ const LOCALES: { code: Locale; label: string }[] = [
   { code: 'en', label: 'EN' },
   { code: 'fr', label: 'FR' },
   { code: 'es', label: 'ES' },
+  { code: 'de', label: 'DE' },
+  { code: 'pt', label: 'PT' },
+  { code: 'zh', label: '中文' },
 ]
 
 function getThemeMode(): ThemeMode {

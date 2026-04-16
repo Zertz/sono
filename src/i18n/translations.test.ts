@@ -13,4 +13,8 @@ describe('idle prompt translations', () => {
       expect(translations[locale].idlePromptLine2.trim().length).toBeGreaterThan(0)
     }
   })
+
+  it('includes the expanded locale set', () => {
+    expect(Object.keys(translations).sort()).toEqual(['de', 'en', 'es', 'fr', 'pt', 'zh'])
+  })
 })
