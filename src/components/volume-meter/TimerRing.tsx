@@ -38,7 +38,7 @@ export default function TimerRing({ timeLeft, totalSeconds, containerRef }: Time
   }, [containerRef])
 
   const active = timeLeft !== null && totalSeconds !== null && totalSeconds > 0
-  const ratio = active && totalSeconds !== 0 ? timeLeft / totalSeconds : 1
+  const ratio = timeLeft !== null && totalSeconds !== null && totalSeconds > 0 ? timeLeft / totalSeconds : 1
 
   // SVG fills the wrapper exactly. The rect is inset by half the stroke width
   // so the stroke renders fully inside the SVG bounds.
